@@ -1,0 +1,323 @@
+---
+title: "REGRESION LINEAL"
+output: html_notebook
+---
+
+
+```{r}
+library(MASS)
+library(dplyr)
+library(ggplot2)
+library(gridExtra)
+library(outliers)
+library(ISLR)
+library(car)
+library(plotly)
+library(reshape2)
+getwd()
+setwd("C:/Users/yoaga/Downloads")#fijo working directory
+```
+
+#glm es para datos donde la varianza no es constante, bueno la generals lineal model
+#se tienen que revisar las interferencias de los datos atípicos con las gráficas de los residuales. 
+#heteroceasticidad
+
+```{r}
+F = read.csv("ResutadosFoci.csv") #cargamos datos
+FD = F[,-1] #eliminamos los caracteres
+View(FD)
+#nuestras condiciones las ingresamos como factor
+FD$Kras=as.factor(FD$Kras)  #NO=0 SI =1
+FD$wt=as.factor(FD$wt)
+FD$cassette=as.factor(FD$cassette)
+FD$esr1y=as.factor(FD$esr1y)
+FD$esr1=as.factor(FD$esr1)
+FD$set=as.factor(FD$set) #set1 = 1 y set2 = 0.
+str(FD)
+#visualizamos la gráfica por pares
+pairs(FD)
+library(dplyr) #para filtrar y generar los dos dataset
+FD1 = filter(FD, set == 1) #set 1
+View(FD1)
+FD2 = filter(FD, set == 0) #set2
+View(FD2)
+```
+
+```{r}
+#ESTA PARTE ES INNECESARIA PERO SOLO CONFIRMA EL ESTADO DE MIS OBSERVACIONES
+par(mfrow=c(3, 3))
+table(FD$Kras) #NO=0 SI =1
+table(FD$wt)
+table(FD$cassette)
+table(FD$esr1y)
+table(FD$esr1)
+```
+
+#preguntarle a Irving sobre la influencia de mis datos atípicos, y si cree conveniente su eliminación
+
+
+```{r}
+#evaliacion de normalidad y outliers
+shapiro.test(FD1$no.foci)
+plot(FD1$no.foci)
+shapiro.test(FD2$no.foci)
+plot(FD2$no.foci)
+#La prueba shapiro y los datos no cumplen la normalidad, lo cual tiene sentido al ser datos discretos. por ello implementaremos el comando glm para modelos lineales generales. 
+```
+
+Pruebas para set 1
+
+##oye carlos que onda con los sets xd
+
+
+```{r}
+#en este experimento sabemos que solo kras formó focis
+#modelo general set1, concluye que solo kras es un buen predictor
+model1 = glm(no.foci ~Kras+wt+cassette+esr1y+esr1, data = FD1)
+summary(model1) #AIC 33.447
+#jugamos y probamos otros modelos 
+#analizamos uno sin kras y obseramos que todas las condiciones se podrías
+#adoptar como predictor y no hay gran diferencia en sus p valores. 
+#lo cual nos hablaria que sin kras las condiciones pueden formar focis. 
+model2 = glm(no.foci ~wt+cassette+esr1y+esr1, data = FD1)
+summary(model2)#AIC 33.447
+model4 = glm(no.foci ~ Kras, data = FD1)
+summary(model4)#AIC  28.171
+# concluimos que kras es el único predictor para este experimento 
+par(mfrow=c(2,2))
+plot(model1)#graficas de residuales del modelo con todas las variables
+plot(model4)#graficas de residuales del modelo con solo kras
+
+modelr = glm(no.foci ~., data=FD)
+summary(modelr)
+```
+
+
+
+Pruebas para set 2
+
+```{r}
+model1f = glm(no.foci ~Kras+wt+cassette+esr1y+esr1, data = FD2)
+summary(model1f) #AIC 39.325 Kras unico predictor
+model2f = glm(no.foci ~wt+cassette+esr1y+esr1, data = FD2)
+summary(model2f)#AIC 39.325 y sucede lo mismo que arriba
+model4f = glm(no.foci ~ Kras, data = FD2)
+summary(model4f)#AIC  33.866 kras el unico predictor
+par(mfrow=c(2,2))
+plot(model1f)#graficas de residuales del modelo con todas las variables
+plot(model4f)#graficas de residuales del modelo con solo kras
+```
+
+# conclusion preeliminar
+
+kras es la unica condicion que demuestra una interaccion significativa para el aumento del numero de focis
+el crecimiento solo lo explica la munation
+
+# ENSAYO DE PROLIFERACIÓN 
+
+```{r}
+#proliferacion 1=team jessica 0=team carlos y johana
+#para todas las condiciones 1=si hay plásmido y 2 es igual a no hay intervención
+setwd("C:/Users/yoaga/Downloads")
+P = read.csv("ResutadosProliferacion.csv") #cargamos datos
+View(P)
+PD=P[,-1]
+#nuestras condiciones las ingresamos como factor
+PD$Kras=as.factor(PD$Kras)  #NO=0 SI =1
+PD$wt=as.factor(PD$wt)
+PD$cassette=as.factor(PD$cassette)
+PD$esr1y=as.factor(PD$esr1y)
+PD$esr1=as.factor(PD$esr1)
+PD$set=as.factor(PD$setnumber) #set1 = 1 y set2 = 0.
+str(PD)
+library(dplyr) #para filtrar y generar los dos dataset
+PD1 = filter(PD, set == 1) #set 1
+View(PD1)
+PD2 = filter(PD, set == 0) #set2
+View(PD2)
+#recomienda dejar el set explícito como una variable
+#en r no usar el igual 
+```
+
+```{r}
+#ESTA PARTE ES INNECESARIA PERO SOLO CONFIRMA EL ESTADO DE MIS OBSERVACIONES
+par(mfrow=c(3, 3))
+table(PD$Kras) #NO=0 SI =1
+table(PD$wt)
+table(PD$cassette)
+table(PD$esr1y)
+table(PD$esr1)
+```
+
+#Aqui siento que hice algo mal porque quizas debi dividir mis datos en tiempos o algo así para el data set y en mis análisis no me salió nada :c
+
+#elaborar código de normalización para este y el de foci en la parte final
+
+```{r}
+#valiacion de normalidad y outliers
+# normalidad si el pvalor mayor a 0.05 hay normalidad 
+shapiro.test(PD1$celprom)
+plot(PD1$celprom)
+shapiro.test(PD2$celprom)
+plot(PD2$celprom)
+#nuevamente hay ausencia de normalida y tiene algo de sentido debido a que son datos discretos, por ello implementé el comando de los modelos generales
+```
+
+```{r}
+#modelo general set 1
+moelg = glm(celprom ~Kras+wt+cassette+esr1y+esr1+tiempo+set, data = PD)
+summary(moelg)
+model11 = glm(celprom ~Kras+wt+cassette+esr1y+esr1+tiempo, data = PD1)
+summary(model11) #AIC
+#analizamos un modelo sin kras y obseramos que
+model22 = glm(celprom ~wt+cassette+esr1y+esr1, data = PD1)
+summary(model22)#AIC
+model44 = glm(celprom ~ Kras, data = PD1)
+summary(model44)#AIC
+par(mfrow=c(2,2))
+plot(model44)#graficas de residuales
+
+
+#no hay suficientes datos con esr1 con la mutacion 
+#todas crecen igual idependiente
+```
+
+```{r}
+#modelo general set 2
+model11p = glm(celprom ~Kras+wt+cassette+esr1y+esr1+tiempo, data = PD2)
+summary(model11p) #AIC
+#analizamos un modelo sin kras y obseramos que
+model22p = glm(celprom ~wt+cassette+esr1y+esr1, data = PD2)
+summary(model22p)#AIC
+model44p = glm(celprom ~ Kras, data = PD2)
+summary(model44p)#AIC
+par(mfrow=c(2,2))
+plot(model44p)#graficas de residuales
+```
+
+podriamos concluir que ninguna de las condiciones muestra una corelacion lineal con un aumento en la proliferacion 
+
+
+#scratch
+#datos que si están normalizados y todo bien, pero igual quizás debi organizar de otra manera mi dataset PORQUE algunas observaciones estan relacionadas con las siguiente, minimo en proliferación si cumplía lo de independencia
+#y tengo grupos en mis observaciones porque se toman fotos de cada cuadrante
+aqui los sets están al reves porque jess es la 2 
+
+Ahora vamos con scratch
+
+```{r}
+setwd("C:/Users/yoaga/Downloads")
+S = read.csv("ResultadosScratch.csv") #cargamos datos
+View(S)
+#visualizamos la gráfica por pares
+#nuestras condiciones las ingresamos como factor 
+#REVISAR SI R GUARDA 1=SI
+S$Kras=as.factor(S$Kras)
+S$wt=as.factor(S$wt)
+S$cassette=as.factor(S$cassette)
+S$esr1y=as.factor(S$esr1y)
+S$esr1=as.factor(S$esr1)
+S$set=as.factor(S$set)
+str(S)
+library(dplyr) #para filtrar y generar los dos dataset
+SD1 = filter(S, set == 1) #set 1 Carlos
+View(SD1)
+SD2 = filter(S, set == 0) #set2 jess
+View(SD2)
+```
+
+```{r}
+#valiacion de normalidad y outliers
+#valiacion de normalidad y outliers
+# normalidad si el pvalor mayor a 0.05 hay normalidad 
+shapiro.test(SD1$Condition)
+plot(SD1$Condition)
+shapiro.test(SD2$Condition)
+plot(SD2$Condition)
+#aqui tampoco existe normalidad
+```
+
+MODELOS
+
+```{r}
+#modelo general set 1
+model111 = glm(Condition ~Kras+wt+cassette+esr1y+esr1+tiempo+set, data = S)
+summary(model111) #AIC
+#analizamos un modelo sin kras y obseramos que
+model222 = glm(Condition ~Kras+wt+cassette+esr1y+esr1+tiempo, data = SD1)
+#aqui tengo la diferencia de magnitudes. pero parece que esr1y es factible
+summary(model222)#AIC
+#model444 = glm(Condition ~ Kras, data = SD1)
+#ummary(model444)#AIC
+par(mfrow=c(2,2))
+#plot(model444)#graficas de residuales
+
+
+#no es significativo esr1 en ninguna medición
+#hacer anovas en 
+```
+
+```{r}
+#modelo general set 2
+model111s = glm(Condition ~Kras+wt+cassette+esr1y+esr1+tiempo, data = SD2)
+summary(model111s) #AIC
+#analizamos un modelo sin kras y obseramos que
+model222s = glm(Condition ~wt+cassette+esr1y+esr1+tiempo, data = SD2)
+#aqui tengo la diferencia de magnitudes. pero parece que esr1y es factible
+summary(model222s)#AIC
+model333s= glm(Condition~esr1y, data=SD2)
+summary(model333s)
+model444s = glm(Condition ~ Kras, data = SD2)
+summary(model444s)#AIC
+par(mfrow=c(2,2))
+plot(model444s)#graficas de residuales
+```
+
+
+#ANOVAS
+
+
+```{r}
+#ANOVAS
+
+#FOCI
+ANOVAF = aov(no.foci ~ Condition+Kras+wt+cassette+esr1y+esr1+set, data=F)
+summary(ANOVAF)
+par(mfrow=c(2,2))
+plot(ANOVAF)
+
+
+#PROLIFERACION
+ANOVAP = aov(celprom ~ Condition+Kras+wt+cassette+esr1y+esr1+setnumber+tiempo, data=P)
+summary(ANOVAP)
+par(mfrow=c(2,2))
+plot(ANOVAP)
+
+#SCRATCH
+ANOVAS = aov(Condition ~ Kras+wt+cassette+esr1y+esr1+set+tiempo, data=S)
+summary(ANOVAS)
+par(mfrow=c(2,2))
+plot(ANOVAS)
+```
+#ANALISIS realizados
+
+En los analisis estadisticos cosideramos cada transfección como una condición, es decir, tuvimos 5 condiciones: células control Wild type, y celulas transfectadas con cassette, Kras, ESR1 and ESR1Y. También se analizaron y modelaron de manera general (todos los datos) y de manera individual (separados por cada set)
+
+Utilizamos r-studio para el análisis de los datos obtenidos. Realizamos modelos de regresión lineal para evaluar si las condiciones estaban relacionadas con la proliferación celular. También realizamos ANOVA de dos vías para analizar las varianzas entre las condiciones. En ambos análisis consideramos alpha=0.05.
+
+# CONCLUSIONES 
+
+1.- EN EL EXPERIMENTO DE FOCI 
+kras es la unica condiciÓn que demuestra una interacciÓn significativa para el INCREMENTO del nÚmero de focis, conun p-valor=1.21e-06. ESTE COMPORTAMIENTO SE MANTUVO EN EL ANALISIS INDIVIDUAL DE CADA SET, con p-valores igual a 0.000666 y 0.000166 respectivamente. 
+
+
+2.- ENSAYO DE PROLIFERACIÓN 
+SE observó que en las condiciones no se relacionaban significativamente con la proliferación, ni en los datos generales ni en los analisis de cada set.
+
+3.- SCRATCH
+El análisis de los todos losdatos de scratch mostró que el set era significativo para la proliferación celular con un p-valor de 0.000645. Al analizar los datos separados por set en el set 1 cassette y ESR1-y mostraron una interacción significativa con un incremento en la proliferación celular con p-value de 0.00833 y 0.00756 respectivamente.. En el set 2 las wild type y cassette mostraron una interacción significativa con un incremento en proliferación con p-value de 4.39e-10 y 0.0127 respectivamente. 
+
+
+De manera general los análisis sugieren la generación de más datos para un mayor poder estadistico en las pruebas. Por ello en las perpectivas se considera un nuevo set para análisis de resultados. 
+
+
